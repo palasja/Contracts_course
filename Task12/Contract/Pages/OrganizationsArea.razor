@@ -1,0 +1,102 @@
+﻿@page "/OrganizationsArea"
+@page "/OrganizationsArea/{AreaId:int}"
+@inject IOrganizationRepository organizationService
+
+@if (organizations == null)
+{
+    @*    <p><em>Loading...</em></p>*@
+}
+else
+{
+    <div class="row">
+        <div class="col col-3">
+            <button class="btn btn-light m-3" @onclick="NewContract">Добавить договор</button>
+        </div>
+        <div class="col col-3">
+            <button class="btn btn-light m-3" @onclick="NewOrganization">Добавить организацию</button>
+        </div>
+        <div class="col col-3">
+            <button class="btn btn-light m-3" @onclick="Calculate">Расчитать</button>
+        </div>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Адрес</th>
+                <th>Email</th>
+                <th>СМДО</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var org in organizations)
+            {
+                <tr>
+                    <td>  <NavLink href=@($"Contracts/{@org.Id}")>@org.FullName</NavLink></td>
+                    <td>@org.Address</td>
+                    <td>@org.Email</td>
+                    <td>@org.Smdo</td>
+                    <td><button class="btn btn-light m-3" @onclick="() => changeOrg(org)">Изменить</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <NewContract @ref="newContract" onCancel="() => newContract.Hide()" AreaId="@AreaId"></NewContract>
+    <NewOrganization @ref="newOrganization" Title="Новая организация" onCancel="() => newOrganization.Hide()" onAction="SaveOrg"  isNew="true"></NewOrganization>
+    <NewOrganization @ref="changeOrganization" Title="Изменить" onCancel="CancelChangeOrganization" organization="changedOrg" onAction="ChangeOrg"></NewOrganization>
+    <Calculate @ref="calculate" onCancel="() => calculate.Hide()" AreaId="@AreaId"></Calculate>
+}
+
+@code {
+    [Parameter] public int AreaId { get; set; }
+    NewContract newContract;
+    NewOrganization newOrganization;
+    NewOrganization changeOrganization;
+    Calculate calculate;
+    List<OrganizationDTO> organizations;
+
+    OrganizationDTO changedOrg;
+    protected override async Task OnInitializedAsync()
+    {
+        organizations = await organizationService.GetOrganizationOnAreaAsync((int)AreaId);
+    }
+
+    void NewContract()
+    {
+        newContract.Show();
+    }
+    void NewOrganization()
+    {
+        newOrganization.Show();
+    }
+    void changeOrg(OrganizationDTO org)
+    {
+        changedOrg = org;
+        changeOrganization.Show();
+    }
+    void Calculate()
+    {
+        calculate.Show();
+    }
+    void CancelChangeOrganization()
+    {
+        changedOrg = null;
+        changeOrganization.Hide();
+    }
+    public async Task SaveOrg()
+    {
+        newOrganization.organization.AreaId = AreaId;
+        await organizationService.AddOrganization(newOrganization.organization, newOrganization.person);
+        organizations = await organizationService.GetOrganizationOnAreaAsync((int)AreaId);
+        newOrganization.Hide();
+    }
+    public async void ChangeOrg()
+    {
+        await organizationService.ChangeOrganization(changeOrganization.organization);
+        organizations = await organizationService.GetOrganizationOnAreaAsync((int)AreaId);
+        changeOrganization.Hide();
+    }
+
+}

@@ -1,0 +1,70 @@
+﻿@page "/People"
+@inject IPersonServiceRepository personService
+
+@if (peple == null)
+{
+        <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Организация</th>
+                <th>ФИО</th>
+                <th>Должность</th>
+                <th>Раб. тел.</th>
+                <th>Email</th>
+                <th>Моб. тел. </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var personOrg in peple)
+            {
+            <tr>
+                <td>@personOrg.OrgName</td>
+                <td>@personOrg.Person.LastName @personOrg.Person.FirstName @personOrg.Person.MiddleName</td>
+                <td>@personOrg.Person.Position</td>
+                <td>@personOrg.Person.Phone</td>
+                <td>@personOrg.Person.Email</td>
+                <td>@personOrg.Person.MobilePhone</td>
+                <td><button class="btn btn-light m-3" @onclick="() => ShowChangePerson(personOrg.Person)">Изменить</button></td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    <Person @ref="changePerson" Title="Изменить" onCancel="CancelChangePerson" person="changedPerson" onAction="ChangePerson"></Person>
+
+}
+
+@code {
+    Person changePerson;
+
+    List<PersonWithOrgName> peple;
+
+    PersonDTO changedPerson;
+    protected override async Task OnInitializedAsync()
+    {
+        peple = await personService.GetPersonWithOrg();
+    }
+
+    void ShowChangePerson(PersonDTO person)
+    {
+        changedPerson = person;
+        changePerson.Show();
+    }
+
+    void CancelChangePerson()
+    {
+        changedPerson = null;
+        changePerson.Hide();
+    }
+
+    public async void ChangePerson()
+    {
+        await personService.UpdatePerson(changePerson.person);
+        peple = await personService.GetPersonWithOrg();
+        changePerson.Hide();
+    }
+}
